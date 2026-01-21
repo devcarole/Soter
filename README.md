@@ -84,21 +84,20 @@ Soter uses a monorepo under the `app` parent folder for streamlined development:
 1. **Clone & Install**  
    ```bash
    git clone <your-repo-url>
-   cd app
-   pnpm install  # Or npm/yarn
+   cd Soter
+   pnpm install
    ```
 
 2. **Environment Variables**  
    Create `.env` files in each package (see `.env.example`):
-   - `backend/.env`: `DATABASE_URL`, `STELLAR_RPC_URL=https://soroban-testnet.stellar.org`, `OPENAI_API_KEY`
+   - `app/backend/.env`: `DATABASE_URL`, `STELLAR_RPC_URL=https://soroban-testnet.stellar.org`, `OPENAI_API_KEY`
    - `soroban/.env`: `SECRET_KEY=your-stellar-secret-key`
    - `app/mobile/.env`: `EXPO_PUBLIC_API_URL` (points to backend)
 
 3. **Database Setup**  
    ```bash
-   cd backend
-   npx prisma generate
-   npx prisma migrate dev
+   pnpm --filter backend prisma:generate
+   pnpm --filter backend prisma:migrate
    ```
 
 4. **Build Contracts**  
@@ -124,8 +123,6 @@ Soter uses a monorepo under the `app` parent folder for streamlined development:
    ```bash
    # From monorepo root (app/)
    cd app
-   # Backend
-   pnpm --filter backend run start:dev
 
    # Frontend (Next.js on port 3000)
    pnpm --filter frontend dev
