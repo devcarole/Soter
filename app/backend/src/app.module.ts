@@ -20,7 +20,7 @@ import { join } from 'node:path';
           join(process.cwd(), 'app', 'backend', '.env'),
         ];
 
-        const existing = candidates.filter((p) => existsSync(p));
+        const existing = candidates.filter(p => existsSync(p));
         return existing.length > 0 ? existing : candidates;
       })(),
     }),

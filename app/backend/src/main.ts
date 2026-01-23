@@ -14,7 +14,7 @@ async function bootstrap() {
     join(__dirname, '..', '.env'),
   ];
 
-  const envPath = candidates.find((p) => existsSync(p));
+  const envPath = candidates.find(p => existsSync(p));
   if (envPath) {
     loadEnv({ path: envPath });
   }
