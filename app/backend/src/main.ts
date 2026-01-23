@@ -23,10 +23,10 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
-  
+
   // Get logger instance
   const logger = app.get(LoggerService);
-  
+
   // Set custom logger
   app.useLogger(logger);
 
@@ -57,10 +57,10 @@ async function bootstrap() {
       },
     }),
   );
-  
+
   // Global interceptors
   app.useGlobalInterceptors(new LoggingInterceptor(logger));
-  
+
   // Global exception filters
   app.useGlobalFilters(new HttpExceptionFilter(logger));
 

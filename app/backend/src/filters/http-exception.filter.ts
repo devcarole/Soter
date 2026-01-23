@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { RequestWithRequestId } from '../middleware/request-correlation.middleware';
 import { LoggerService } from '../logger/logger.service';
 
 @Catch()
@@ -15,7 +16,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithRequestId>();
 
     const status =
       exception instanceof HttpException
@@ -29,10 +30,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const requestId = request.requestId;
 
+    const exceptionError = exception as Error;
+
     // Log the error with request correlation
     this.logger.error(
       `HTTP Exception: ${status}`,
-      exception instanceof Error ? exception.stack : undefined,
+      exceptionError instanceof Error ? exceptionError.stack : undefined,
       'HttpExceptionFilter',
       {
         requestId,

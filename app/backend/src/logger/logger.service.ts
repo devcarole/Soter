@@ -10,7 +10,7 @@ export class LoggerService implements NestLoggerService {
       level: process.env.LOG_LEVEL || 'info',
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: {
-        level: (label) => ({ level: label }),
+        level: label => ({ level: label }),
       },
     });
   }
@@ -25,7 +25,12 @@ export class LoggerService implements NestLoggerService {
   /**
    * Log an error message
    */
-  error(message: string, trace?: string, context?: string, meta?: Record<string, any>) {
+  error(
+    message: string,
+    trace?: string,
+    context?: string,
+    meta?: Record<string, any>,
+  ) {
     this.logger.error({ context, trace, ...meta }, message);
   }
 
