@@ -2,6 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { LoggerService } from './logger/logger.service';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { config as loadEnv } from 'dotenv';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,13 +19,19 @@ async function bootstrap() {
     join(__dirname, '..', '.env'),
   ];
 
-  const envPath = candidates.find((p) => existsSync(p));
+  const envPath = candidates.find(p => existsSync(p));
   if (envPath) {
     loadEnv({ path: envPath });
   }
 
   const app = await NestFactory.create(AppModule);
-  
+
+  // Get logger instance
+  const logger = app.get(LoggerService);
+
+  // Set custom logger
+  app.useLogger(logger);
+
   // Enable shutdown hooks
   app.enableShutdownHooks();
 
@@ -56,6 +65,12 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Global interceptors
+  app.useGlobalInterceptors(new LoggingInterceptor(logger));
+
+  // Global exception filters
+  app.useGlobalFilters(new HttpExceptionFilter(logger));
 
   // Swagger/OpenAPI Documentation
   const config = new DocumentBuilder()
@@ -97,10 +112,10 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
-  console.log(`🔍 API Version: v1`);
+
+  logger.log(`🚀 Application is running on: http://localhost:${port}`);
+  logger.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  logger.log(`🔍 API Version: v1`);
 }
 
-bootstrap();
+void bootstrap();
