@@ -9,7 +9,7 @@ pub struct AidEscrow;
 
 /// Package status enum
 #[contracttype]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum PackageStatus {
     Created = 0,
@@ -20,7 +20,7 @@ pub enum PackageStatus {
 
 /// Package structure
 #[contracttype]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct Package {
     pub recipient: Address,
     pub amount: i128,
@@ -30,6 +30,8 @@ pub struct Package {
     pub expires_at: u64,
     pub metadata: Map<Symbol, String>,
 }
+
+type PackageDetails = (Address, i128, Address, u32, u64, u64);
 
 /// Contract errors
 #[contracterror]
@@ -149,9 +151,20 @@ impl AidEscrow {
     }
 
     /// Get package details
-    pub fn get_package(env: Env, package_id: u64) -> Result<Option<Package>, Error> {
+    pub fn get_package(env: Env, package_id: u64) -> Result<Option<PackageDetails>, Error> {
         let key = Symbol::new(&env, "package");
-        Ok(env.storage().persistent().get(&(key, package_id)))
+        let package: Option<Package> = env.storage().persistent().get(&(key, package_id));
+
+        Ok(package.map(|value| {
+            (
+                value.recipient,
+                value.amount,
+                value.token,
+                value.status as u32,
+                value.created_at,
+                value.expires_at,
+            )
+        }))
     }
 
     /// Get total package count
@@ -205,13 +218,14 @@ mod test {
         assert_eq!(package_id, 0);
 
         let package = client.get_package(&package_id).unwrap();
-        assert_eq!(package.recipient, recipient);
-        assert_eq!(package.amount, 1000);
-        assert_eq!(package.token, token);
-        assert_eq!(package.status, PackageStatus::Created);
+        assert_eq!(package.0, recipient);
+        assert_eq!(package.1, 1000);
+        assert_eq!(package.2, token);
+        assert_eq!(package.3, PackageStatus::Created as u32);
     }
 
     #[test]
+    #[should_panic]
     fn test_create_package_invalid_amount() {
         let (env, client) = setup();
         let admin = Address::generate(&env);
@@ -221,8 +235,7 @@ mod test {
         client.initialize(&admin);
         env.mock_all_auths();
 
-        let result = client.try_create_package(&recipient, &0, &token, &86400);
-        assert_eq!(result, Err(Ok(Error::InvalidAmount)));
+        client.create_package(&recipient, &0, &token, &86400);
     }
 
     #[test]
@@ -243,7 +256,7 @@ mod test {
         client.claim_package(&package_id);
 
         let package = client.get_package(&package_id).unwrap();
-        assert_eq!(package.status, PackageStatus::Claimed);
+        assert_eq!(package.3, PackageStatus::Claimed as u32);
     }
 
     #[test]

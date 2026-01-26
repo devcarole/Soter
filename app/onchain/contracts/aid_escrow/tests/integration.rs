@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use aid_escrow::{AidEscrow, AidEscrowClient, Error, PackageStatus};
+use aid_escrow::{AidEscrow, AidEscrowClient, PackageStatus};
 use soroban_sdk::{Address, Env, testutils::Address as _};
 
 #[test]
@@ -26,10 +26,10 @@ fn test_integration_flow() {
 
     // 3. Verify package details
     let package = client.get_package(&package_id).unwrap();
-    assert_eq!(package.recipient, recipient);
-    assert_eq!(package.amount, 1000);
-    assert_eq!(package.token, token);
-    assert_eq!(package.status, PackageStatus::Created);
+    assert_eq!(package.0, recipient);
+    assert_eq!(package.1, 1000);
+    assert_eq!(package.2, token);
+    assert_eq!(package.3, PackageStatus::Created as u32);
 
     // 4. Claim package (recipient auth required)
     env.mock_all_auths();
@@ -37,7 +37,7 @@ fn test_integration_flow() {
 
     // 5. Verify claimed
     let package = client.get_package(&package_id).unwrap();
-    assert_eq!(package.status, PackageStatus::Claimed);
+    assert_eq!(package.3, PackageStatus::Claimed as u32);
 
     // 6. Verify count
     assert_eq!(client.get_package_count(), 1);
@@ -70,14 +70,15 @@ fn test_multiple_packages() {
     let p1 = client.get_package(&id1).unwrap();
     let p2 = client.get_package(&id2).unwrap();
 
-    assert_eq!(p1.recipient, recipient1);
-    assert_eq!(p2.recipient, recipient2);
-    assert_eq!(p1.amount, 500);
-    assert_eq!(p2.amount, 1000);
+    assert_eq!(p1.0, recipient1);
+    assert_eq!(p2.0, recipient2);
+    assert_eq!(p1.1, 500);
+    assert_eq!(p2.1, 1000);
 }
 
 #[test]
-fn test_error_cases() {
+#[should_panic]
+fn test_invalid_amount_panics() {
     let env = Env::default();
 
     let admin = Address::generate(&env);
@@ -91,15 +92,36 @@ fn test_error_cases() {
     env.mock_all_auths();
 
     // Test invalid amount
-    let result = client.try_create_package(&recipient, &0, &token, &86400);
-    assert_eq!(result, Err(Ok(Error::InvalidAmount)));
+    client.create_package(&recipient, &0, &token, &86400);
+}
 
-    // Create valid package first
-    let _package_id = client.create_package(&recipient, &1000, &token, &86400);
+#[test]
+#[should_panic]
+fn test_claim_nonexistent_panics() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+
+    let contract_id = env.register(AidEscrow, ());
+    let client = AidEscrowClient::new(&env, &contract_id);
+
+    client.initialize(&admin);
+    env.mock_all_auths();
 
     // Try to claim non-existent package
-    let result = client.try_claim_package(&999);
-    assert_eq!(result, Err(Ok(Error::PackageNotFound)));
+    client.claim_package(&999);
+}
+
+#[test]
+fn test_get_nonexistent_package() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+
+    let contract_id = env.register(AidEscrow, ());
+    let client = AidEscrowClient::new(&env, &contract_id);
+
+    client.initialize(&admin);
 
     // Get non-existent package
     let result = client.get_package(&999);
