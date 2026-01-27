@@ -16,6 +16,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { ClaimsModule } from './claims/claims.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ObservabilityModule } from './observability/observability.module';
     TestErrorModule,
     CampaignsModule,
     ObservabilityModule,
+    ClaimsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
