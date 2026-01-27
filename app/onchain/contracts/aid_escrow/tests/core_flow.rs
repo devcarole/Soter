@@ -1,15 +1,17 @@
 #![cfg(test)]
 
-use crate::{AidEscrow, AidEscrowClient, Error, PackageStatus};
+use aid_escrow::{AidEscrow, AidEscrowClient, Error, PackageStatus};
 use soroban_sdk::{
-    Address, Env,
     testutils::{Address as _, Ledger},
-    token,
+    token::{StellarAssetClient, TokenClient},
+    Address, Env,
 };
 
-fn setup_token(env: &Env, admin: &Address) -> token::Client<'static> {
-    let token_contract = env.register_stellar_asset_contract(admin.clone());
-    token::Client::new(env, &token_contract)
+fn setup_token(env: &Env, admin: &Address) -> (TokenClient<'static>, StellarAssetClient<'static>) {
+    let token_contract = env.register_stellar_asset_contract_v2(admin.clone());
+    let token_client = TokenClient::new(env, &token_contract.address());
+    let token_admin_client = StellarAssetClient::new(env, &token_contract.address());
+    (token_client, token_admin_client)
 }
 
 #[test]
@@ -21,7 +23,7 @@ fn test_core_flow_fund_create_claim() {
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
-    let token_client = setup_token(&env, &token_admin);
+    let (token_client, token_admin_client) = setup_token(&env, &token_admin);
 
     let contract_id = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(&env, &contract_id);
@@ -30,7 +32,7 @@ fn test_core_flow_fund_create_claim() {
     client.init(&admin);
 
     // Mint tokens to admin for funding
-    token_client.mint(&admin, &10_000);
+    token_admin_client.mint(&admin, &10_000);
 
     // 2. Fund the contract (Pool)
     client.fund(&token_client.address, &admin, &5000);
@@ -64,13 +66,13 @@ fn test_solvency_check() {
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
-    let token_client = setup_token(&env, &token_admin);
+    let (token_client, token_admin_client) = setup_token(&env, &token_admin);
 
     let contract_id = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(&env, &contract_id);
     client.init(&admin);
 
-    token_client.mint(&admin, &1000);
+    token_admin_client.mint(&admin, &1000);
     client.fund(&token_client.address, &admin, &1000);
 
     // Try creating package > available balance
@@ -93,13 +95,13 @@ fn test_expiry_and_refund() {
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
-    let token_client = setup_token(&env, &token_admin);
+    let (token_client, token_admin_client) = setup_token(&env, &token_admin);
 
     let contract_id = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(&env, &contract_id);
     client.init(&admin);
 
-    token_client.mint(&admin, &1000);
+    token_admin_client.mint(&admin, &1000);
     client.fund(&token_client.address, &admin, &1000);
 
     // Create Package that expires soon
@@ -137,13 +139,13 @@ fn test_revoke_flow() {
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
-    let token_client = setup_token(&env, &token_admin);
+    let (token_client, token_admin_client) = setup_token(&env, &token_admin);
 
     let contract_id = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(&env, &contract_id);
     client.init(&admin);
 
-    token_client.mint(&admin, &1000);
+    token_admin_client.mint(&admin, &1000);
     client.fund(&token_client.address, &admin, &1000);
 
     let pkg_id = 1;

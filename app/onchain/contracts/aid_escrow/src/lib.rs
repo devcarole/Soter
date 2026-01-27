@@ -1,8 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    Address, Env, Map, String, Symbol, contract, contracterror, contractevent, contractimpl,
-    contracttype, symbol_short, token,
+    contract, contracterror, contractevent, contractimpl, contracttype, symbol_short, token,
+    Address, Env, Map, String, Symbol,
 };
 
 // --- Storage Keys ---
@@ -52,6 +52,7 @@ pub enum Error {
 }
 
 // --- Contract Events ---
+// Changed from #[contracttype] to #[contractevent]
 
 #[contractevent]
 pub struct FundEvent {
@@ -130,17 +131,15 @@ impl AidEscrow {
 
         // Perform transfer: From -> Contract
         let token_client = token::Client::new(&env, &token);
-        token_client.transfer(&from, &env.current_contract_address(), &amount);
+        token_client.transfer(&from, env.current_contract_address(), &amount);
 
         // Emit event
-        env.events().publish(
-            (symbol_short!("fund"),),
-            FundEvent {
-                from,
-                token,
-                amount,
-            },
-        );
+        FundEvent {
+            from,
+            token,
+            amount,
+        }
+        .publish(&env);
 
         Ok(())
     }
@@ -204,14 +203,12 @@ impl AidEscrow {
         env.storage().persistent().set(&key, &package);
 
         // Emit Event
-        env.events().publish(
-            (symbol_short!("pkg_crtd"),),
-            PackageCreatedEvent {
-                id,
-                recipient,
-                amount,
-            },
-        );
+        PackageCreatedEvent {
+            id,
+            recipient,
+            amount,
+        }
+        .publish(&env);
 
         Ok(id)
     }
@@ -259,14 +256,12 @@ impl AidEscrow {
         );
 
         // Emit Event
-        env.events().publish(
-            (symbol_short!("claimed"),),
-            ClaimedEvent {
-                id,
-                recipient: package.recipient,
-                amount: package.amount,
-            },
-        );
+        ClaimedEvent {
+            id,
+            recipient: package.recipient.clone(),
+            amount: package.amount,
+        }
+        .publish(&env);
 
         Ok(())
     }
@@ -304,14 +299,12 @@ impl AidEscrow {
             &package.amount,
         );
 
-        env.events().publish(
-            (symbol_short!("disbursed"),),
-            DisbursedEvent {
-                id,
-                admin: admin.clone(),
-                amount: package.amount,
-            },
-        );
+        DisbursedEvent {
+            id,
+            admin: admin.clone(),
+            amount: package.amount,
+        }
+        .publish(&env);
 
         Ok(())
     }
@@ -339,14 +332,12 @@ impl AidEscrow {
         // Unlock funds (return to pool)
         Self::decrement_locked(&env, &package.token, package.amount);
 
-        env.events().publish(
-            (symbol_short!("revoked"),),
-            RevokedEvent {
-                id,
-                admin: admin.clone(),
-                amount: package.amount,
-            },
-        );
+        RevokedEvent {
+            id,
+            admin: admin.clone(),
+            amount: package.amount,
+        }
+        .publish(&env);
 
         Ok(())
     }
@@ -391,14 +382,12 @@ impl AidEscrow {
         let token_client = token::Client::new(&env, &package.token);
         token_client.transfer(&env.current_contract_address(), &admin, &package.amount);
 
-        env.events().publish(
-            (symbol_short!("refunded"),),
-            RefundedEvent {
-                id,
-                admin: admin.clone(),
-                amount: package.amount,
-            },
-        );
+        RefundedEvent {
+            id,
+            admin: admin.clone(),
+            amount: package.amount,
+        }
+        .publish(&env);
 
         Ok(())
     }
