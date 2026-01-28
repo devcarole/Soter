@@ -47,4 +47,17 @@ export const metricsProviders = [
     labelNames: ['operation'],
     buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1],
   }),
+
+  // On-chain Metrics
+  makeCounterProvider({
+    name: 'onchain_operations_total',
+    help: 'Total number of on-chain operations',
+    labelNames: ['operation', 'adapter', 'status'],
+  }),
+  makeHistogramProvider({
+    name: 'onchain_operation_duration_seconds',
+    help: 'Duration of on-chain operations in seconds',
+    labelNames: ['operation', 'adapter'],
+    buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5],
+  }),
 ];

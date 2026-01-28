@@ -17,6 +17,10 @@ export class MetricsService {
     public activeConnectionsGauge: Gauge<string>,
     @InjectMetric('db_query_duration_seconds')
     public dbQueryDuration: Histogram<string>,
+    @InjectMetric('onchain_operations_total')
+    public onchainOperationsCounter: Counter<string>,
+    @InjectMetric('onchain_operation_duration_seconds')
+    public onchainOperationDuration: Histogram<string>,
   ) {}
 
   /**
@@ -72,6 +76,38 @@ export class MetricsService {
     this.dbQueryDuration.observe(
       {
         operation,
+      },
+      duration,
+    );
+  }
+
+  /**
+   * Increment on-chain operation counter
+   */
+  incrementOnchainOperation(
+    operation: string,
+    adapter: string,
+    status: 'success' | 'failed',
+  ): void {
+    this.onchainOperationsCounter.inc({
+      operation,
+      adapter,
+      status,
+    });
+  }
+
+  /**
+   * Record on-chain operation duration
+   */
+  recordOnchainDuration(
+    operation: string,
+    adapter: string,
+    duration: number,
+  ): void {
+    this.onchainOperationDuration.observe(
+      {
+        operation,
+        adapter,
       },
       duration,
     );
