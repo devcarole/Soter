@@ -1,5 +1,4 @@
-import { Controller, Get, Version } from '@nestjs/common';
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Req, Version } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RequestWithRequestId } from '../middleware/request-correlation.middleware';
 import { HealthService } from './health.service';
@@ -27,9 +26,6 @@ export class HealthController {
       },
     },
   })
-  check() {
-  @ApiOperation({ summary: 'Check system health' })
-  @ApiResponse({ status: 200, description: 'System is healthy' })
   check(@Req() req: RequestWithRequestId) {
     // Access the request ID from the request object
     const requestId = req.requestId;
@@ -41,6 +37,7 @@ export class HealthController {
   }
 
   @Get('error')
+  @Version(API_VERSIONS.V1)
   @ApiOperation({ summary: 'Trigger an error for testing' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   triggerError(@Req() req: RequestWithRequestId) {
