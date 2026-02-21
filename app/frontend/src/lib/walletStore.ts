@@ -16,6 +16,8 @@ export const useWalletStore = create<WalletState>()(
     }),
     {
       name: 'wallet-storage',
+      partialize: (state) =>
+        state.publicKey ? { publicKey: state.publicKey } : {},
     }
   )
 );

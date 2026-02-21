@@ -17,7 +17,7 @@ export const WalletConnect: React.FC = () => {
       // Check if Freighter API is available
       if (typeof window === "undefined" || !(window as any).FreighterApi) {
         setFreighterInstalled(false);
-        console.error("Freighter is not installed or available in the browser.");
+        console.warn("Freighter is not installed or available in the browser.");
         return;
       } else {
         setFreighterInstalled(true);
@@ -70,7 +70,7 @@ export const WalletConnect: React.FC = () => {
       } catch (err) {
         console.error("Error during setAllowed():", err);
         // User likely rejected the connection request
-        setError("Wallet connection rejected or failed.");
+        setError("Connection cancelled. Please try again and approve the request in Freighter.");
         throw err;
       }
 
@@ -81,7 +81,7 @@ export const WalletConnect: React.FC = () => {
         console.log("Raw pubKey object from getAddress() after connect:", pubKey);
       } catch (err) {
         console.error("Error during getAddress() after setAllowed():", err);
-        setError("Failed to retrieve wallet address. Ensure Freighter is unlocked.");
+        setError("Couldn't read your wallet address. Make sure Freighter is unlocked and try again.");
         throw err;
       }
 
@@ -89,13 +89,13 @@ export const WalletConnect: React.FC = () => {
         setPublicKey(pubKey.address);
       } else {
         console.warn("getAddress() returned no address after connect.", pubKey);
-        setError("Failed to retrieve wallet address. Result was empty.");
+        setError("Access not granted. Please approve the Freighter request to connect your wallet.");
         setPublicKey(null);
       }
     } catch (err) {
       console.error("Final catch: Error connecting to Freighter:", err);
       // Only set generic error if specific error wasn't already set
-      setError((prev) => prev || "Error connecting to Freighter. Please try again.");
+      setError((prev) => prev || "Something went wrong. Please refresh and try connecting again.");
       setPublicKey(null);
     } finally {
       setLoading(false);
