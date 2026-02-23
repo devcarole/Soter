@@ -22,6 +22,7 @@ import {
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ApiKeyGuard } from './common/guards/api-key.guard';
+import { RolesGuard } from './auth/roles.guard';
 import { ObservabilityModule } from './observability/observability.module';
 import { ClaimsModule } from './claims/claims.module';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
@@ -77,7 +78,11 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
     },
     {
       provide: APP_GUARD,
-      useClass: ApiKeyGuard,
+      useClass: ApiKeyGuard, // runs first — authenticates and sets request.user
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // runs second — checks request.user.role against @Roles()
     },
     {
       provide: APP_INTERCEPTOR,
