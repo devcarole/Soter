@@ -95,7 +95,9 @@ describe('HealthController', () => {
   });
 
   it('GET /health/ready returns 503 when database is not reachable', async () => {
-    prismaMock.$queryRaw.mockRejectedValueOnce(new Error('database unavailable'));
+    prismaMock.$queryRaw.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    );
 
     const res = await request(app.getHttpServer())
       .get('/health/ready')
@@ -118,7 +120,9 @@ describe('HealthController', () => {
     configValues.HEALTHCHECK_STELLAR_REQUIRED = 'true';
     global.fetch = jest
       .fn()
-      .mockRejectedValueOnce(new Error('rpc timeout')) as unknown as typeof fetch;
+      .mockRejectedValueOnce(
+        new Error('rpc timeout'),
+      ) as unknown as typeof fetch;
 
     const res = await request(app.getHttpServer())
       .get('/health/ready')

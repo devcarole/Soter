@@ -316,7 +316,8 @@ export class VerificationController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get user verification history (v1)',
-    description: 'Retrieve all verification requests for a specific user. Part of v1 API.',
+    description:
+      'Retrieve all verification requests for a specific user. Part of v1 API.',
   })
   @ApiParam({
     name: 'userId',

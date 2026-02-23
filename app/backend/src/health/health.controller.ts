@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Req,
-  Res,
-  Version,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Req, Res, Version, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { RequestWithRequestId } from '../middleware/request-correlation.middleware';
