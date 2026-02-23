@@ -30,11 +30,12 @@ Mobile application for field operations and pilots, built with Expo and TypeScri
 
 ## Scripts
 
-- `pnpm start`: Start Expo dev server.
-- `pnpm android`: Run on Android.
-- `pnpm ios`: Run on iOS.
-- `pnpm test`: Run tests with Jest.
-- `pnpm lint`: Run ESLint.
+- `pnpm start`: Start Expo dev server with Metro bundler
+- `pnpm android`: Run on Android emulator or device
+- `pnpm ios`: Run on iOS simulator or device
+- `pnpm web`: Run in web browser for testing
+- `pnpm test`: Run Jest test suite
+- `pnpm lint`: Run ESLint for code quality checks
 
 ## Health Screen
 
@@ -45,3 +46,5 @@ If the backend is unreachable, it displays mock data to ensure the UI can still 
 
 - **Connection refused**: If running on a physical device, ensure `EXPO_PUBLIC_API_URL` uses your machine's local IP address.
 - **Metro not starting**: Try clearing the cache with `expo start -c`.
+
+For detailed development setup, testing procedures, and comprehensive troubleshooting, see [CONTRIBUTING.md](./CONTRIBUTING.md).
