@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -23,7 +22,7 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { ApiResponseDto } from '../common/dto/api-response.dto';
 import { Roles } from 'src/auth/roles.decorator';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { AppRole } from 'src/auth/app-role.enum';
 
 @ApiTags('Campaigns')
 @Controller('campaigns')
@@ -31,11 +30,11 @@ export class CampaignsController {
   constructor(private readonly campaigns: CampaignsService) {}
 
   @Post()
+  @Roles(AppRole.admin, AppRole.ngo)
   @ApiOperation({ summary: 'Create a campaign' })
   @ApiBody({ type: CreateCampaignDto })
-  @Roles('admin', 'ngo') // Only admin or ngo can create
-  @UseGuards(RolesGuard)
   @ApiResponse({ status: 201, description: 'Campaign created' })
+  @ApiResponse({ status: 403, description: 'Insufficient role' })
   async create(@Body() dto: CreateCampaignDto) {
     const campaign = await this.campaigns.create(dto);
     return ApiResponseDto.ok(campaign, 'Campaigns created successfully');

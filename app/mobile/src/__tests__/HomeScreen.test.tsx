@@ -16,13 +16,15 @@ describe('HomeScreen', () => {
 
   it('renders correctly', () => {
     const { getByText } = render(<HomeScreen navigation={mockNavigation} />);
-    expect(getByText('Soter Mobile')).toBeTruthy();
+    expect(getByText('Soter')).toBeTruthy();
+    expect(getByText('Powered by Stellar')).toBeTruthy();
     expect(getByText('Transparent aid, directly delivered.')).toBeTruthy();
     expect(getByText('View Aid Overview (Coming Soon)')).toBeTruthy();
     expect(getByText('View Aid Details (Coming Soon)')).toBeTruthy();
+    expect(getByText(/Stellar network and Soroban smart contracts/)).toBeTruthy();
   });
 
-  it('navigates to Health Screen when button is pressed', () => {
+  it('navigates to Health Screen when primary button is pressed', () => {
     const { getByText } = render(<HomeScreen navigation={mockNavigation} />);
     const button = getByText('Check Backend Health');
 

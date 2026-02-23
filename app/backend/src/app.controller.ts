@@ -13,7 +13,8 @@ export class AppController {
   @Version(API_VERSIONS.V1)
   @ApiOperation({
     summary: 'Root endpoint (v1)',
-    description: 'Returns a welcome message and API information. Part of v1 API.',
+    description:
+      'Returns a welcome message and API information. Part of v1 API.',
   })
   @ApiResponse({
     status: 200,
