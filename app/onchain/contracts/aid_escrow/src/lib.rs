@@ -8,6 +8,7 @@ use soroban_sdk::{
 // --- Storage Keys ---
 const KEY_ADMIN: Symbol = symbol_short!("admin");
 const KEY_TOTAL_LOCKED: Symbol = symbol_short!("locked"); // Map<Address, i128>
+const KEY_VERSION: Symbol = symbol_short!("version");
 
 // --- Data Types ---
 
@@ -116,6 +117,7 @@ impl AidEscrow {
             return Err(Error::AlreadyInitialized);
         }
         env.storage().instance().set(&KEY_ADMIN, &admin);
+        env.storage().instance().set(&KEY_VERSION, &1u32);
         Ok(())
     }
 
@@ -124,6 +126,30 @@ impl AidEscrow {
             .instance()
             .get(&KEY_ADMIN)
             .ok_or(Error::NotInitialized)
+    }
+
+    pub fn get_version(env: Env) -> u32 {
+        env.storage().instance().get(&KEY_VERSION).unwrap_or(0)
+    }
+
+    pub fn migrate(env: Env, new_version: u32) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        let current_version = Self::get_version(env.clone());
+        
+        // Perform version-specific migrations
+        match (current_version, new_version) {
+            (1, 2) => {
+                // Future: Add migration logic for v1 -> v2
+            }
+            _ => {
+                // No-op for now, but structured for future use
+            }
+        }
+
+        env.storage().instance().set(&KEY_VERSION, &new_version);
+        Ok(())
     }
 
     // --- Funding & Packages ---

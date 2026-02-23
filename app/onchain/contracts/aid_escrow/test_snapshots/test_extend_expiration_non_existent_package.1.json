@@ -263,6 +263,14 @@
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                         }
+                      },
+                      {
+                        "key": {
+                          "symbol": "version"
+                        },
+                        "val": {
+                          "u32": 1
+                        }
                       }
                     ]
                   }
