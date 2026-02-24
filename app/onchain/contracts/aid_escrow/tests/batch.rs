@@ -47,8 +47,13 @@ fn test_batch_create_packages_success() {
     let expires_in = 86400_u64; // 1 day
 
     // Call batch_create_packages
-    let ids =
-        client.batch_create_packages(&recipients, &amounts, &token_client.address, &expires_in);
+    let ids = client.batch_create_packages(
+        &admin,
+        &recipients,
+        &amounts,
+        &token_client.address,
+        &expires_in,
+    );
 
     // Verify returned IDs are sequential starting from 0
     assert_eq!(ids.len(), 3);
@@ -104,8 +109,13 @@ fn test_batch_create_packages_mismatched_arrays() {
     amounts.push_back(2000_i128);
     amounts.push_back(3000_i128);
 
-    let result =
-        client.try_batch_create_packages(&recipients, &amounts, &token_client.address, &86400);
+    let result = client.try_batch_create_packages(
+        &admin,
+        &recipients,
+        &amounts,
+        &token_client.address,
+        &86400,
+    );
     assert_eq!(result, Err(Ok(Error::MismatchedArrays)));
 }
 
@@ -136,8 +146,13 @@ fn test_batch_create_packages_invalid_amount() {
     amounts.push_back(1000_i128);
     amounts.push_back(0_i128);
 
-    let result =
-        client.try_batch_create_packages(&recipients, &amounts, &token_client.address, &86400);
+    let result = client.try_batch_create_packages(
+        &admin,
+        &recipients,
+        &amounts,
+        &token_client.address,
+        &86400,
+    );
     assert_eq!(result, Err(Ok(Error::InvalidAmount)));
 }
 
@@ -168,8 +183,13 @@ fn test_batch_create_packages_insufficient_funds() {
     amounts.push_back(800_i128);
     amounts.push_back(700_i128);
 
-    let result =
-        client.try_batch_create_packages(&recipients, &amounts, &token_client.address, &86400);
+    let result = client.try_batch_create_packages(
+        &admin,
+        &recipients,
+        &amounts,
+        &token_client.address,
+        &86400,
+    );
     assert_eq!(result, Err(Ok(Error::InsufficientFunds)));
 }
 
@@ -192,7 +212,8 @@ fn test_batch_create_packages_empty_arrays() {
     let recipients: Vec<Address> = Vec::new(&env);
     let amounts: Vec<i128> = Vec::new(&env);
 
-    let ids = client.batch_create_packages(&recipients, &amounts, &token_client.address, &86400);
+    let ids =
+        client.batch_create_packages(&admin, &recipients, &amounts, &token_client.address, &86400);
     assert_eq!(ids.len(), 0);
 }
 
@@ -224,7 +245,8 @@ fn test_batch_then_individual_no_id_collision() {
     amounts.push_back(1000_i128);
     amounts.push_back(1000_i128);
 
-    let ids = client.batch_create_packages(&recipients, &amounts, &token_client.address, &86400);
+    let ids =
+        client.batch_create_packages(&admin, &recipients, &amounts, &token_client.address, &86400);
     assert_eq!(ids.get(0).unwrap(), 0);
     assert_eq!(ids.get(1).unwrap(), 1);
 
@@ -232,6 +254,7 @@ fn test_batch_then_individual_no_id_collision() {
     let manual_id = 100; // explicitly different from batch-assigned IDs
     let expiry = env.ledger().timestamp() + 86400;
     client.create_package(
+        &admin,
         &manual_id,
         &recipient3,
         &1000,

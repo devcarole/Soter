@@ -10,6 +10,8 @@ const KEY_ADMIN: Symbol = symbol_short!("admin");
 const KEY_TOTAL_LOCKED: Symbol = symbol_short!("locked"); // Map<Address, i128>
 const KEY_PKG_COUNTER: Symbol = symbol_short!("pkg_cnt"); // Auto-incrementing package counter
 const KEY_CONFIG: Symbol = symbol_short!("config");
+const KEY_PKG_IDX: Symbol = symbol_short!("pkg_idx"); // Aggregation index counter
+const KEY_DISTRIBUTORS: Symbol = symbol_short!("dstrbtrs"); // Map<Address, bool>
 
 // --- Data Types ---
 
@@ -43,6 +45,14 @@ pub struct Config {
     pub min_amount: i128,
     pub max_expires_in: u64,
     pub allowed_tokens: Vec<Address>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct Aggregates {
+    pub total_committed: i128,
+    pub total_claimed: i128,
+    pub total_expired_cancelled: i128,
 }
 
 #[contracterror]
@@ -150,6 +160,40 @@ impl AidEscrow {
             .ok_or(Error::NotInitialized)
     }
 
+    pub fn add_distributor(env: Env, addr: Address) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        let mut distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(&env));
+        distributors.set(addr, true);
+        env.storage()
+            .instance()
+            .set(&KEY_DISTRIBUTORS, &distributors);
+
+        Ok(())
+    }
+
+    pub fn remove_distributor(env: Env, addr: Address) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        let mut distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(&env));
+        distributors.remove(addr);
+        env.storage()
+            .instance()
+            .set(&KEY_DISTRIBUTORS, &distributors);
+
+        Ok(())
+    }
+
     pub fn set_config(env: Env, config: Config) -> Result<(), Error> {
         let admin = Self::get_admin(env.clone())?;
         admin.require_auth();
@@ -200,15 +244,19 @@ impl AidEscrow {
     /// Locks funds from the available pool (Contract Balance - Total Locked).
     pub fn create_package(
         env: Env,
+        operator: Address,
         id: u64,
         recipient: Address,
         amount: i128,
         token: Address,
         expires_at: u64,
     ) -> Result<u64, Error> {
-        let admin = Self::get_admin(env.clone())?;
-        admin.require_auth();
+        Self::require_admin_or_distributor(&env, &operator)?;
         let config = Self::get_config(env.clone());
+
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
 
         if amount < config.min_amount {
             return Err(Error::InvalidAmount);
@@ -266,6 +314,12 @@ impl AidEscrow {
 
         env.storage().persistent().set(&key, &package);
 
+        // 5. Track package index for aggregation
+        let idx: u64 = env.storage().instance().get(&KEY_PKG_IDX).unwrap_or(0);
+        let idx_key = (symbol_short!("pidx"), idx);
+        env.storage().persistent().set(&idx_key, &id);
+        env.storage().instance().set(&KEY_PKG_IDX, &(idx + 1));
+
         // Emit Event
         PackageCreatedEvent {
             id,
@@ -281,13 +335,13 @@ impl AidEscrow {
     /// Uses an auto-incrementing counter for package IDs.
     pub fn batch_create_packages(
         env: Env,
+        operator: Address,
         recipients: Vec<Address>,
         amounts: Vec<i128>,
         token: Address,
         expires_in: u64,
     ) -> Result<Vec<u64>, Error> {
-        let admin = Self::get_admin(env.clone())?;
-        admin.require_auth();
+        Self::require_admin_or_distributor(&env, &operator)?;
 
         // Validate array lengths match
         if recipients.len() != amounts.len() {
@@ -306,6 +360,8 @@ impl AidEscrow {
 
         // Read the current package counter
         let mut counter: u64 = env.storage().instance().get(&KEY_PKG_COUNTER).unwrap_or(0);
+        // Read the current aggregation index
+        let mut idx: u64 = env.storage().instance().get(&KEY_PKG_IDX).unwrap_or(0);
 
         let created_at = env.ledger().timestamp();
         let expires_at = created_at + expires_in;
@@ -347,6 +403,11 @@ impl AidEscrow {
 
             env.storage().persistent().set(&key, &package);
 
+            // Track package index for aggregation
+            let idx_key = (symbol_short!("pidx"), idx);
+            env.storage().persistent().set(&idx_key, &id);
+            idx += 1;
+
             // Update locked
             current_locked += amount;
             total_amount += amount;
@@ -362,15 +423,16 @@ impl AidEscrow {
             created_ids.push_back(id);
         }
 
-        // Persist updated locked map and counter
+        // Persist updated locked map, counter, and aggregation index
         locked_map.set(token.clone(), current_locked);
         env.storage().instance().set(&KEY_TOTAL_LOCKED, &locked_map);
         env.storage().instance().set(&KEY_PKG_COUNTER, &counter);
+        env.storage().instance().set(&KEY_PKG_IDX, &idx);
 
         // Emit batch event
         BatchCreatedEvent {
             ids: created_ids.clone(),
-            admin,
+            admin: operator,
             total_amount,
         }
         .publish(&env);
@@ -682,11 +744,80 @@ impl AidEscrow {
         env.storage().instance().set(&KEY_TOTAL_LOCKED, &locked_map);
     }
 
+    fn require_admin_or_distributor(env: &Env, operator: &Address) -> Result<(), Error> {
+        operator.require_auth();
+
+        let admin = Self::get_admin(env.clone())?;
+        if *operator == admin {
+            return Ok(());
+        }
+
+        let distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(env));
+        if distributors.get(operator.clone()).unwrap_or(false) {
+            Ok(())
+        } else {
+            Err(Error::NotAuthorized)
+        }
+    }
+
     pub fn get_package(env: Env, id: u64) -> Result<Package, Error> {
         let key = (symbol_short!("pkg"), id);
         env.storage()
             .persistent()
             .get(&key)
             .ok_or(Error::PackageNotFound)
+    }
+
+    // --- Analytics ---
+
+    /// Returns aggregate statistics for a given token.
+    ///
+    /// Iterates across all created packages and computes:
+    /// - `total_committed`: sum of amounts for packages still in `Created` status,
+    /// - `total_claimed`: sum of amounts for packages in `Claimed` status,
+    /// - `total_expired_cancelled`: sum of amounts for packages in `Expired`,
+    ///    `Cancelled`, or `Refunded` status.
+    ///
+    /// This is a read-only view intended for dashboards and analytics.
+    pub fn get_aggregates(env: Env, token: Address) -> Aggregates {
+        let count: u64 = env.storage().instance().get(&KEY_PKG_IDX).unwrap_or(0);
+
+        let mut total_committed: i128 = 0;
+        let mut total_claimed: i128 = 0;
+        let mut total_expired_cancelled: i128 = 0;
+
+        for i in 0..count {
+            let idx_key = (symbol_short!("pidx"), i);
+            if let Some(pkg_id) = env.storage().persistent().get::<_, u64>(&idx_key) {
+                let pkg_key = (symbol_short!("pkg"), pkg_id);
+                if let Some(package) = env.storage().persistent().get::<_, Package>(&pkg_key)
+                    && package.token == token
+                {
+                    match package.status {
+                        PackageStatus::Created => {
+                            total_committed += package.amount;
+                        }
+                        PackageStatus::Claimed => {
+                            total_claimed += package.amount;
+                        }
+                        PackageStatus::Expired
+                        | PackageStatus::Cancelled
+                        | PackageStatus::Refunded => {
+                            total_expired_cancelled += package.amount;
+                        }
+                    }
+                }
+            }
+        }
+
+        Aggregates {
+            total_committed,
+            total_claimed,
+            total_expired_cancelled,
+        }
     }
 }

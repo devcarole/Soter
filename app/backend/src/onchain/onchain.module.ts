@@ -1,9 +1,11 @@
 import { Module, Provider } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { OnchainAdapter } from './onchain.adapter';
+import { BullModule } from '@nestjs/bullmq';
+import { OnchainAdapter, ONCHAIN_ADAPTER_TOKEN } from './onchain.adapter';
+export { ONCHAIN_ADAPTER_TOKEN };
 import { MockOnchainAdapter } from './onchain.adapter.mock';
-
-export const ONCHAIN_ADAPTER_TOKEN = 'ONCHAIN_ADAPTER';
+import { OnchainProcessor } from './onchain.processor';
+import { OnchainService } from './onchain.service';
 
 /**
  * Factory function to create the appropriate adapter based on configuration
@@ -36,8 +38,26 @@ const onchainAdapterProvider: Provider = {
 };
 
 @Module({
-  imports: [ConfigModule],
-  providers: [MockOnchainAdapter, onchainAdapterProvider],
-  exports: [ONCHAIN_ADAPTER_TOKEN],
+  imports: [
+    ConfigModule,
+    BullModule.registerQueueAsync({
+      name: 'onchain',
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST') || 'localhost',
+          port: parseInt(configService.get<string>('REDIS_PORT') || '6379'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  providers: [
+    MockOnchainAdapter,
+    onchainAdapterProvider,
+    OnchainProcessor,
+    OnchainService,
+  ],
+  exports: [ONCHAIN_ADAPTER_TOKEN, OnchainService],
 })
 export class OnchainModule {}

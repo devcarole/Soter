@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   OnchainAdapter,
   ONCHAIN_ADAPTER_TOKEN,
-} from '../onchain/onchain.module';
+} from '../onchain/onchain.adapter';
 import type { DisburseParams } from '../onchain/onchain.adapter';
 import { LoggerService } from '../logger/logger.service';
 import { MetricsService } from '../observability/metrics/metrics.service';

@@ -1,3 +1,5 @@
+export const ONCHAIN_ADAPTER_TOKEN = 'ONCHAIN_ADAPTER';
+
 /**
  * On-chain adapter interface for Soroban AidEscrow contract interactions
  */

@@ -7,12 +7,14 @@ import { VerificationFlowService } from './verification-flow.service';
 import { VerificationProcessor } from './verification.processor';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     AuditModule,
+    NotificationsModule,
     BullModule.registerQueueAsync({
       name: 'verification',
       imports: [ConfigModule],
