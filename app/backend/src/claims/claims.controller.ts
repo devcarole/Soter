@@ -6,6 +6,7 @@ import { Roles } from 'src/auth/roles.decorator';
 import { AppRole } from 'src/auth/app-role.enum';
 
 @ApiTags('Onchain Proxy')
+@ApiBearerAuth('JWT-auth')
 @Controller('claims')
 export class ClaimsController {
   constructor(private readonly claimsService: ClaimsService) { }
@@ -58,7 +59,6 @@ export class ClaimsController {
   @ApiNotFoundResponse({
     description: 'The specified claim was not found.',
   })
-  @ApiBearerAuth('JWT-auth')
   verify(@Param('id') id: string) {
     return this.claimsService.verify(id);
   }
@@ -77,7 +77,6 @@ export class ClaimsController {
   @ApiNotFoundResponse({
     description: 'The specified claim was not found.',
   })
-  @ApiBearerAuth('JWT-auth')
   approve(@Param('id') id: string) {
     return this.claimsService.approve(id);
   }
@@ -119,7 +118,6 @@ export class ClaimsController {
   @ApiNotFoundResponse({
     description: 'The specified claim was not found.',
   })
-  @ApiBearerAuth('JWT-auth')
   disburse(@Param('id') id: string) {
     return this.claimsService.disburse(id);
   }

@@ -8,9 +8,10 @@ import {
   Version,
 } from '@nestjs/common';
 import { AidService } from './aid.service';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequestResponse, ApiNotFoundResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Aid')
+@ApiBearerAuth('JWT-auth')
 @Controller('aid')
 export class AidController {
   constructor(private readonly aidService: AidService) { }

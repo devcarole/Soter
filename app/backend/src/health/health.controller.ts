@@ -10,7 +10,7 @@ import { Public } from '../common/decorators/public.decorator';
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly healthService: HealthService) { }
+  constructor(private readonly healthService: HealthService) {}
 
   @Public()
   @Get()

@@ -37,7 +37,7 @@ export class VerificationController {
   constructor(
     private readonly verificationService: VerificationService,
     private readonly verificationFlowService: VerificationFlowService,
-  ) { }
+  ) {}
 
   @Post('claims/:id/enqueue')
   @Version('1')

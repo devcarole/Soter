@@ -7,7 +7,7 @@ import { Public } from './common/decorators/public.decorator';
 @ApiTags('App')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   @Version(API_VERSIONS.V1)

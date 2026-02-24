@@ -5,7 +5,7 @@ import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiUnauthorizedResponse
 @ApiTags('Audit')
 @Controller('audit')
 export class AuditController {
-  constructor(private readonly auditService: AuditService) { }
+  constructor(private readonly auditService: AuditService) {}
 
   @Get()
   @Version('1')

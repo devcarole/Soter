@@ -21,6 +21,7 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
@@ -30,6 +31,7 @@ import { Roles } from 'src/auth/roles.decorator';
 import { AppRole } from 'src/auth/app-role.enum';
 
 @ApiTags('Campaigns')
+@ApiBearerAuth('JWT-auth')
 @Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaigns: CampaignsService) { }
