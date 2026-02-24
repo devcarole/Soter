@@ -250,6 +250,10 @@ impl AidEscrow {
         Self::require_admin_or_distributor(&env, &operator)?;
         let config = Self::get_config(env.clone());
 
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+
         if amount < config.min_amount {
             return Err(Error::InvalidAmount);
         }
