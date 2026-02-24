@@ -1,11 +1,7 @@
 import {
   Controller,
-  Post,
   Body,
-  Patch,
   Param,
-  Delete,
-  Version,
 } from '@nestjs/common';
 import { AidService } from './aid.service';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -14,7 +10,7 @@ import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequest
 @ApiBearerAuth('JWT-auth')
 @Controller('aid')
 export class AidController {
-  constructor(private readonly aidService: AidService) {}
+  constructor(private readonly aidService: AidService) { }
 
   @ApiOperation({
     summary: 'Create a new campaign',

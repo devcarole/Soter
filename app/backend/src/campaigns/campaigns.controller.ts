@@ -12,8 +12,6 @@ import {
 import {
   ApiBody,
   ApiOperation,
-  ApiParam,
-  ApiQuery,
   ApiOkResponse,
   ApiCreatedResponse,
   ApiBadRequestResponse,
@@ -34,7 +32,7 @@ import { AppRole } from 'src/auth/app-role.enum';
 @ApiBearerAuth('JWT-auth')
 @Controller('campaigns')
 export class CampaignsController {
-  constructor(private readonly campaigns: CampaignsService) {}
+  constructor(private readonly campaigns: CampaignsService) { }
 
   @Post()
   @Roles(AppRole.admin, AppRole.ngo)
