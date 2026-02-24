@@ -64,11 +64,11 @@ fn test_aggregates_single_created_package() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
     let recipient = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
-    client.create_package(&1, &recipient, &2000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &recipient, &2000, &token_client.address, &expiry);
 
     let agg = client.get_aggregates(&token_client.address);
     assert_eq!(agg.total_committed, 2000);
@@ -83,7 +83,7 @@ fn test_aggregates_mixed_statuses() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
@@ -96,18 +96,18 @@ fn test_aggregates_mixed_statuses() {
     let short_expiry = start_time + 100;
 
     // Package 1 — will remain Created (committed)
-    client.create_package(&1, &r1, &1000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &r1, &1000, &token_client.address, &expiry);
 
     // Package 2 — will be Claimed
-    client.create_package(&2, &r2, &2000, &token_client.address, &expiry);
+    client.create_package(&admin, &2, &r2, &2000, &token_client.address, &expiry);
     client.claim(&2);
 
     // Package 3 — will be Cancelled (via revoke)
-    client.create_package(&3, &r3, &500, &token_client.address, &expiry);
+    client.create_package(&admin, &3, &r3, &500, &token_client.address, &expiry);
     client.revoke(&3);
 
     // Package 4 — will be Expired then Refunded
-    client.create_package(&4, &r4, &750, &token_client.address, &short_expiry);
+    client.create_package(&admin, &4, &r4, &750, &token_client.address, &short_expiry);
     // Advance past short_expiry to expire
     env.ledger().set_timestamp(short_expiry + 1);
     client.refund(&4);
@@ -123,14 +123,14 @@ fn test_aggregates_all_claimed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
-    client.create_package(&10, &r1, &3000, &token_client.address, &expiry);
-    client.create_package(&11, &r2, &4000, &token_client.address, &expiry);
+    client.create_package(&admin, &10, &r1, &3000, &token_client.address, &expiry);
+    client.create_package(&admin, &11, &r2, &4000, &token_client.address, &expiry);
     client.claim(&10);
     client.claim(&11);
 
@@ -145,14 +145,14 @@ fn test_aggregates_all_cancelled() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
-    client.create_package(&20, &r1, &1500, &token_client.address, &expiry);
-    client.create_package(&21, &r2, &2500, &token_client.address, &expiry);
+    client.create_package(&admin, &20, &r1, &1500, &token_client.address, &expiry);
+    client.create_package(&admin, &21, &r2, &2500, &token_client.address, &expiry);
     client.cancel_package(&20);
     client.cancel_package(&21);
 
@@ -190,12 +190,12 @@ fn test_aggregates_filters_by_token() {
     let expiry = env.ledger().timestamp() + 86400;
 
     // Token A packages
-    client.create_package(&1, &r1, &3000, &token_a.address, &expiry);
-    client.create_package(&2, &r2, &2000, &token_a.address, &expiry);
+    client.create_package(&admin, &1, &r1, &3000, &token_a.address, &expiry);
+    client.create_package(&admin, &2, &r2, &2000, &token_a.address, &expiry);
     client.claim(&2);
 
     // Token B packages
-    client.create_package(&3, &r1, &5000, &token_b.address, &expiry);
+    client.create_package(&admin, &3, &r1, &5000, &token_b.address, &expiry);
     client.revoke(&3);
 
     // Aggregates for Token A
@@ -218,12 +218,12 @@ fn test_aggregates_unknown_token() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
-    client.create_package(&1, &r, &1000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &r, &1000, &token_client.address, &expiry);
 
     // Query for a completely different (random) token address
     let unknown_token = Address::generate(&env);
@@ -240,18 +240,18 @@ fn test_aggregates_disburse_counts_as_claimed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
     // Package 1 — claimed by recipient
-    client.create_package(&1, &r1, &1000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &r1, &1000, &token_client.address, &expiry);
     client.claim(&1);
 
     // Package 2 — disbursed by admin (also sets status to Claimed)
-    client.create_package(&2, &r2, &2000, &token_client.address, &expiry);
+    client.create_package(&admin, &2, &r2, &2000, &token_client.address, &expiry);
     client.disburse(&2);
 
     let agg = client.get_aggregates(&token_client.address);
@@ -267,13 +267,13 @@ fn test_aggregates_many_packages() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 100_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 100_000);
     let expiry = env.ledger().timestamp() + 86400;
 
     // Create 10 packages: even IDs -> claim, odd IDs -> cancel
     for i in 0u64..10 {
         let r = Address::generate(&env);
-        client.create_package(&i, &r, &1000, &token_client.address, &expiry);
+        client.create_package(&admin, &i, &r, &1000, &token_client.address, &expiry);
         if i % 2 == 0 {
             client.claim(&i);
         } else {
@@ -294,13 +294,13 @@ fn test_aggregates_update_after_transitions() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
     // Step 1: Create — should be committed
-    client.create_package(&1, &r, &3000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &r, &3000, &token_client.address, &expiry);
     let agg1 = client.get_aggregates(&token_client.address);
     assert_eq!(agg1.total_committed, 3000);
     assert_eq!(agg1.total_claimed, 0);
@@ -319,12 +319,12 @@ fn test_aggregates_revoke_then_refund() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let (client, token_client, _admin, _contract_id) = setup_funded(&env, 10_000);
+    let (client, token_client, admin, _contract_id) = setup_funded(&env, 10_000);
 
     let r = Address::generate(&env);
     let expiry = env.ledger().timestamp() + 86400;
 
-    client.create_package(&1, &r, &4000, &token_client.address, &expiry);
+    client.create_package(&admin, &1, &r, &4000, &token_client.address, &expiry);
 
     // After creation
     let agg1 = client.get_aggregates(&token_client.address);

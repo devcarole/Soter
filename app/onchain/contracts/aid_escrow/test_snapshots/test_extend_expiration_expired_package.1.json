@@ -104,6 +104,9 @@
               "function_name": "create_package",
               "args": [
                 {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                },
+                {
                   "u64": "1"
                 },
                 {

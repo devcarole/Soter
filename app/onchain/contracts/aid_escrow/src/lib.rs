@@ -11,6 +11,7 @@ const KEY_TOTAL_LOCKED: Symbol = symbol_short!("locked"); // Map<Address, i128>
 const KEY_PKG_COUNTER: Symbol = symbol_short!("pkg_cnt"); // Auto-incrementing package counter
 const KEY_CONFIG: Symbol = symbol_short!("config");
 const KEY_PKG_IDX: Symbol = symbol_short!("pkg_idx"); // Aggregation index counter
+const KEY_DISTRIBUTORS: Symbol = symbol_short!("dstrbtrs"); // Map<Address, bool>
 
 // --- Data Types ---
 
@@ -159,6 +160,36 @@ impl AidEscrow {
             .ok_or(Error::NotInitialized)
     }
 
+    pub fn add_distributor(env: Env, addr: Address) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        let mut distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(&env));
+        distributors.set(addr, true);
+        env.storage().instance().set(&KEY_DISTRIBUTORS, &distributors);
+
+        Ok(())
+    }
+
+    pub fn remove_distributor(env: Env, addr: Address) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        let mut distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(&env));
+        distributors.remove(addr);
+        env.storage().instance().set(&KEY_DISTRIBUTORS, &distributors);
+
+        Ok(())
+    }
+
     pub fn set_config(env: Env, config: Config) -> Result<(), Error> {
         let admin = Self::get_admin(env.clone())?;
         admin.require_auth();
@@ -209,14 +240,14 @@ impl AidEscrow {
     /// Locks funds from the available pool (Contract Balance - Total Locked).
     pub fn create_package(
         env: Env,
+        operator: Address,
         id: u64,
         recipient: Address,
         amount: i128,
         token: Address,
         expires_at: u64,
     ) -> Result<u64, Error> {
-        let admin = Self::get_admin(env.clone())?;
-        admin.require_auth();
+        Self::require_admin_or_distributor(&env, &operator)?;
         let config = Self::get_config(env.clone());
 
         if amount < config.min_amount {
@@ -296,13 +327,13 @@ impl AidEscrow {
     /// Uses an auto-incrementing counter for package IDs.
     pub fn batch_create_packages(
         env: Env,
+        operator: Address,
         recipients: Vec<Address>,
         amounts: Vec<i128>,
         token: Address,
         expires_in: u64,
     ) -> Result<Vec<u64>, Error> {
-        let admin = Self::get_admin(env.clone())?;
-        admin.require_auth();
+        Self::require_admin_or_distributor(&env, &operator)?;
 
         // Validate array lengths match
         if recipients.len() != amounts.len() {
@@ -393,7 +424,7 @@ impl AidEscrow {
         // Emit batch event
         BatchCreatedEvent {
             ids: created_ids.clone(),
-            admin,
+            admin: operator,
             total_amount,
         }
         .publish(&env);
@@ -703,6 +734,26 @@ impl AidEscrow {
 
         locked_map.set(token.clone(), new_locked);
         env.storage().instance().set(&KEY_TOTAL_LOCKED, &locked_map);
+    }
+
+    fn require_admin_or_distributor(env: &Env, operator: &Address) -> Result<(), Error> {
+        operator.require_auth();
+
+        let admin = Self::get_admin(env.clone())?;
+        if *operator == admin {
+            return Ok(());
+        }
+
+        let distributors: Map<Address, bool> = env
+            .storage()
+            .instance()
+            .get(&KEY_DISTRIBUTORS)
+            .unwrap_or(Map::new(env));
+        if distributors.get(operator.clone()).unwrap_or(false) {
+            Ok(())
+        } else {
+            Err(Error::NotAuthorized)
+        }
     }
 
     pub fn get_package(env: Env, id: u64) -> Result<Package, Error> {
