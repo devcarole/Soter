@@ -13,6 +13,7 @@ import {
 } from './dto/start-verification.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { CompleteVerificationDto } from './dto/complete-verification.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const DEFAULT_CODE_LENGTH = 6;
 const DEFAULT_TTL_MINUTES = 10;
@@ -32,6 +33,7 @@ export class VerificationFlowService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.codeLength =
       this.configService.get<number>('VERIFICATION_OTP_LENGTH') ??
@@ -92,7 +94,7 @@ export class VerificationFlowService {
       },
     });
 
-    this.sendCode(dto.channel, identifier, code);
+    await this.sendCode(dto.channel, identifier, code);
 
     this.logger.log(
       `Verification session started: ${session.id} for ${dto.channel}:${identifier}`,
@@ -150,7 +152,11 @@ export class VerificationFlowService {
       },
     });
 
-    this.sendCode(session.channel, session.identifier, code);
+    await this.sendCode(
+      session.channel as unknown as VerificationChannelDto,
+      session.identifier,
+      code,
+    );
 
     this.logger.log(`Verification code resent for session ${session.id}`);
 
@@ -232,10 +238,21 @@ export class VerificationFlowService {
     return String(code);
   }
 
-  private sendCode(channel: string, identifier: string, code: string): void {
-    // Mock: in production, integrate with email/SMS provider
-    this.logger.debug(
-      `[Mock] Sending ${channel} verification code to ${identifier}: ${code}`,
-    );
+  private async sendCode(
+    channel: VerificationChannelDto,
+    identifier: string,
+    code: string,
+  ): Promise<void> {
+    const message = `Your verification code is: ${code}`;
+
+    if (channel === VerificationChannelDto.email) {
+      await this.notificationsService.sendEmail(
+        identifier,
+        'Verification Code',
+        message,
+      );
+    } else if (channel === VerificationChannelDto.phone) {
+      await this.notificationsService.sendSms(identifier, message);
+    }
   }
 }

@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StartVerificationDto } from './dto/start-verification.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { CompleteVerificationDto } from './dto/complete-verification.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('VerificationFlowService', () => {
   let service: VerificationFlowService;
@@ -65,6 +66,13 @@ describe('VerificationFlowService', () => {
               };
               return config[key];
             }),
+          },
+        },
+        {
+          provide: NotificationsService,
+          useValue: {
+            sendEmail: jest.fn().mockResolvedValue({ id: 'job-email' }),
+            sendSms: jest.fn().mockResolvedValue({ id: 'job-sms' }),
           },
         },
       ],
