@@ -20,7 +20,7 @@ fn test_version_set_on_init() {
 #[test]
 fn test_migrate_admin_only() {
     let env = Env::default();
-    
+
     let admin = Address::generate(&env);
     let contract_id = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(&env, &contract_id);

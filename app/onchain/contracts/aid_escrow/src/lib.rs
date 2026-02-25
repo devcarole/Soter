@@ -137,7 +137,7 @@ impl AidEscrow {
         admin.require_auth();
 
         let current_version = Self::get_version(env.clone());
-        
+
         // Perform version-specific migrations
         match (current_version, new_version) {
             (1, 2) => {
