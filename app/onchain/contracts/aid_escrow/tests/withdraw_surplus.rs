@@ -28,7 +28,7 @@ fn setup_funded(
     let token_admin = Address::generate(env);
     let (token_client, token_admin_client) = setup_token(env, &token_admin);
 
-    let contract_address = env.register_contract(None, AidEscrow);
+    let contract_address = env.register(AidEscrow, ());
     let client = AidEscrowClient::new(env, &contract_address);
 
     // Initialize contract
