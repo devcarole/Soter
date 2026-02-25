@@ -12,6 +12,7 @@ const KEY_PKG_COUNTER: Symbol = symbol_short!("pkg_cnt"); // Auto-incrementing p
 const KEY_CONFIG: Symbol = symbol_short!("config");
 const KEY_PKG_IDX: Symbol = symbol_short!("pkg_idx"); // Aggregation index counter
 const KEY_DISTRIBUTORS: Symbol = symbol_short!("dstrbtrs"); // Map<Address, bool>
+const KEY_PAUSED: Symbol = symbol_short!("paused");
 
 // --- Data Types ---
 
@@ -70,6 +71,7 @@ pub enum Error {
     PackageIdExists = 10,
     InvalidState = 11,     // Transition not allowed
     MismatchedArrays = 12, // recipients and amounts have different lengths
+    ContractPaused = 13,
 }
 
 // --- Contract Events ---
@@ -130,6 +132,16 @@ pub struct ExtendedEvent {
     pub admin: Address,
     pub old_expires_at: u64,
     pub new_expires_at: u64,
+}
+
+#[contractevent]
+pub struct ContractPausedEvent {
+    pub admin: Address,
+}
+
+#[contractevent]
+pub struct ContractUnpausedEvent {
+    pub admin: Address,
 }
 
 #[contract]
@@ -206,6 +218,26 @@ impl AidEscrow {
         Ok(())
     }
 
+    pub fn pause(env: Env) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+        env.storage().instance().set(&KEY_PAUSED, &true);
+        ContractPausedEvent { admin }.publish(&env);
+        Ok(())
+    }
+
+    pub fn unpause(env: Env) -> Result<(), Error> {
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+        env.storage().instance().set(&KEY_PAUSED, &false);
+        ContractUnpausedEvent { admin }.publish(&env);
+        Ok(())
+    }
+
+    pub fn is_paused(env: Env) -> bool {
+        env.storage().instance().get(&KEY_PAUSED).unwrap_or(false)
+    }
+
     pub fn get_config(env: Env) -> Config {
         env.storage().instance().get(&KEY_CONFIG).unwrap_or(Config {
             min_amount: 1,
@@ -251,6 +283,7 @@ impl AidEscrow {
         token: Address,
         expires_at: u64,
     ) -> Result<u64, Error> {
+        Self::check_paused(&env)?;
         Self::require_admin_or_distributor(&env, &operator)?;
         let config = Self::get_config(env.clone());
 
@@ -341,6 +374,7 @@ impl AidEscrow {
         token: Address,
         expires_in: u64,
     ) -> Result<Vec<u64>, Error> {
+        Self::check_paused(&env)?;
         Self::require_admin_or_distributor(&env, &operator)?;
 
         // Validate array lengths match
@@ -444,6 +478,7 @@ impl AidEscrow {
 
     /// Recipient claims the package.
     pub fn claim(env: Env, id: u64) -> Result<(), Error> {
+        Self::check_paused(&env)?;
         let key = (symbol_short!("pkg"), id);
         let mut package: Package = env
             .storage()
@@ -725,6 +760,13 @@ impl AidEscrow {
     }
 
     // --- Helpers ---
+
+    fn check_paused(env: &Env) -> Result<(), Error> {
+        if env.storage().instance().get(&KEY_PAUSED).unwrap_or(false) {
+            return Err(Error::ContractPaused);
+        }
+        Ok(())
+    }
 
     fn decrement_locked(env: &Env, token: &Address, amount: i128) {
         let mut locked_map: Map<Address, i128> = env
