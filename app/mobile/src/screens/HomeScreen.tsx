@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -39,10 +39,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => { }} // Future: Navigate to Aid Status
+            onPress={() => Alert.alert('Coming Soon', 'Coming in a future wave')}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>View Aid Status (Coming Soon)</Text>
+            <Text style={styles.secondaryButtonText}>View Aid Overview (Coming Soon)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => Alert.alert('Coming Soon', 'Coming in a future wave')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.secondaryButtonText}>View Aid Details (Coming Soon)</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -135,5 +143,10 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 16,
     fontWeight: '600',
+  },
+  buttonWrapper: {
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: 300,
   },
 });

@@ -11,8 +11,11 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { ClaimStatus } from '@prisma/client';
-import { OnchainAdapter, DisburseResult } from '../onchain/onchain.adapter';
-import { ONCHAIN_ADAPTER_TOKEN } from '../onchain/onchain.module';
+import {
+  OnchainAdapter,
+  DisburseResult,
+  ONCHAIN_ADAPTER_TOKEN,
+} from '../onchain/onchain.adapter';
 import { LoggerService } from '../logger/logger.service';
 import { MetricsService } from '../observability/metrics/metrics.service';
 import { AuditService } from '../audit/audit.service';

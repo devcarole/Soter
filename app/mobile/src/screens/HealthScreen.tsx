@@ -13,12 +13,43 @@ import {
 import { fetchHealthStatus, HealthStatus } from '../services/api';
 import { getMockHealthData } from '../services/mockData';
 
+// Derive environment label from EXPO_PUBLIC_ENV_NAME, falling back to a
+// short token extracted from the API URL (e.g. "localhost" → "dev").
+const getEnvLabel = (): string => {
+  const explicit = process.env.EXPO_PUBLIC_ENV_NAME;
+  if (explicit) return explicit;
+  const url = process.env.EXPO_PUBLIC_API_URL ?? '';
+  if (url.includes('staging')) return 'staging';
+  if (url.includes('prod')) return 'prod';
+  return 'dev';
+};
+
+const getEnvBadgeColor = (label: string): string => {
+  switch (label.toLowerCase()) {
+    case 'prod':
+    case 'production':
+      return '#C62828'; // red
+    case 'staging':
+      return '#F57F17'; // amber
+    default:
+      return '#1565C0'; // blue – dev / local
+  }
+};
+
 export const HealthScreen = () => {
   const [healthData, setHealthData] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isMockData, setIsMockData] = useState(false);
+
+  const envLabel = getEnvLabel();
+  const envBadgeColor = getEnvBadgeColor(envLabel);
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  // Show only the host+port portion to keep the badge compact
+  const shortApiUrl = (() => {
+    try { return new URL(apiUrl).host; } catch { return apiUrl; }
+  })();
 
   const loadHealthData = async (showRefreshing = false) => {
     try {
@@ -99,11 +130,20 @@ export const HealthScreen = () => {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>System Health</Text>
-            {isMockData && (
-              <View style={styles.mockBadge}>
-                <Text style={styles.mockBadgeText}>🔧 MOCK DATA</Text>
+            <View style={styles.headerBadges}>
+              {/* Environment badge */}
+              <View
+                testID="env-badge"
+                style={[styles.envBadge, { backgroundColor: envBadgeColor }]}
+              >
+                <Text style={styles.envBadgeText}>{envLabel.toUpperCase()}</Text>
               </View>
-            )}
+              {isMockData && (
+                <View style={styles.mockBadge}>
+                  <Text style={styles.mockBadgeText}>🔧 MOCK</Text>
+                </View>
+              )}
+            </View>
           </View>
 
           {/* Error message if any */}
@@ -226,6 +266,17 @@ export const HealthScreen = () => {
             <Text style={styles.footerSubText}>
               {!isMockData && 'Data fetched from /health endpoint'}
             </Text>
+            {/* Environment / backend indicator – visible to testers */}
+            <View style={styles.footerEnvRow} testID="footer-env-row">
+              <Text style={styles.footerEnvLabel}>Environment: </Text>
+              <Text testID="footer-env-name" style={[styles.footerEnvValue, { color: envBadgeColor }]}>
+                {envLabel}
+              </Text>
+              <Text style={styles.footerEnvSeparator}> · </Text>
+              <Text testID="footer-api-url" style={styles.footerEnvUrl} numberOfLines={1}>
+                {shortApiUrl}
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -415,6 +466,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  headerBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  envBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  envBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
   footer: {
     marginTop: 20,
     paddingVertical: 10,
@@ -431,5 +498,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     marginTop: 4,
+  },
+  footerEnvRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    flexWrap: 'nowrap',
+  },
+  footerEnvLabel: {
+    fontSize: 11,
+    color: '#aaa',
+  },
+  footerEnvValue: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  footerEnvSeparator: {
+    fontSize: 11,
+    color: '#aaa',
+  },
+  footerEnvUrl: {
+    fontSize: 11,
+    color: '#888',
+    flexShrink: 1,
   },
 });
