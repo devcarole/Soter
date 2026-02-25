@@ -4,7 +4,7 @@
 
 use aid_escrow::{AidEscrow, AidEscrowClient};
 use soroban_sdk::{
-    symbol_short, Address, Env, Map, Val, Vec,
+    Address, Env, Map, Val, Vec, symbol_short,
     testutils::{Address as _, Events, Ledger},
     token::{StellarAssetClient, TokenClient},
 };
@@ -61,7 +61,10 @@ fn test_escrow_funded_emits_event() {
     let data = assert_last_event_topic(&env, &contract_id, "escrow_funded");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
     assert_eq!(map.get(symbol_short!("from")), Some(admin.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(5000i128.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(5000i128.into_val(&env))
+    );
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
 
@@ -93,9 +96,18 @@ fn test_package_created_emits_event() {
 
     let data = assert_last_event_topic(&env, &contract_id, "package_created");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
-    assert_eq!(map.get(symbol_short!("package_id")), Some(42u64.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("recipient")), Some(recipient.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(1000i128.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("package_id")),
+        Some(42u64.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("recipient")),
+        Some(recipient.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(1000i128.into_val(&env))
+    );
     assert_eq!(map.get(symbol_short!("actor")), Some(admin.into_val(&env)));
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
@@ -130,10 +142,22 @@ fn test_package_claimed_emits_event() {
 
     let data = assert_last_event_topic(&env, &contract_id, "package_claimed");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
-    assert_eq!(map.get(symbol_short!("package_id")), Some(0u64.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("recipient")), Some(recipient.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(1000i128.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("actor")), Some(recipient.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("package_id")),
+        Some(0u64.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("recipient")),
+        Some(recipient.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(1000i128.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("actor")),
+        Some(recipient.into_val(&env))
+    );
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
 
@@ -167,9 +191,18 @@ fn test_package_disbursed_emits_event() {
 
     let data = assert_last_event_topic(&env, &contract_id, "package_disbursed");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
-    assert_eq!(map.get(symbol_short!("package_id")), Some(0u64.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("recipient")), Some(recipient.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(1000i128.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("package_id")),
+        Some(0u64.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("recipient")),
+        Some(recipient.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(1000i128.into_val(&env))
+    );
     assert_eq!(map.get(symbol_short!("actor")), Some(admin.into_val(&env)));
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
@@ -204,9 +237,18 @@ fn test_package_revoked_emits_event() {
 
     let data = assert_last_event_topic(&env, &contract_id, "package_revoked");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
-    assert_eq!(map.get(symbol_short!("package_id")), Some(0u64.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("recipient")), Some(recipient.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(1000i128.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("package_id")),
+        Some(0u64.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("recipient")),
+        Some(recipient.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(1000i128.into_val(&env))
+    );
     assert_eq!(map.get(symbol_short!("actor")), Some(admin.into_val(&env)));
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
@@ -242,9 +284,18 @@ fn test_package_refunded_emits_event() {
 
     let data = assert_last_event_topic(&env, &contract_id, "package_refunded");
     let map: Map<soroban_sdk::Symbol, Val> = data.try_into().unwrap();
-    assert_eq!(map.get(symbol_short!("package_id")), Some(0u64.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("recipient")), Some(recipient.into_val(&env)));
-    assert_eq!(map.get(symbol_short!("amount")), Some(1000i128.into_val(&env)));
+    assert_eq!(
+        map.get(symbol_short!("package_id")),
+        Some(0u64.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("recipient")),
+        Some(recipient.into_val(&env))
+    );
+    assert_eq!(
+        map.get(symbol_short!("amount")),
+        Some(1000i128.into_val(&env))
+    );
     assert_eq!(map.get(symbol_short!("actor")), Some(admin.into_val(&env)));
     assert!(map.get(symbol_short!("timestamp")).is_some());
 }
