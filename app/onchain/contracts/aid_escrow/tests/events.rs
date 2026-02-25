@@ -17,10 +17,7 @@ fn setup_token(env: &Env, admin: &Address) -> (TokenClient<'static>, StellarAsse
 }
 
 /// Returns events from the given contract. Each element: (contract_id, topics, data).
-fn contract_events(
-    env: &Env,
-    contract_id: &Address,
-) -> std::vec::Vec<(Address, Vec<Val>, Val)> {
+fn contract_events(env: &Env, contract_id: &Address) -> std::vec::Vec<(Address, Vec<Val>, Val)> {
     env.events()
         .all()
         .into_iter()
@@ -110,10 +107,7 @@ fn test_package_created_emits_event() {
         symbol_short!("package_created").into_val(&env),
     );
     let map = Map::<Symbol, Val>::try_from_val(&env, &data).unwrap();
-    assert_eq!(
-        map.get(sym_package_id(&env)),
-        Some(42u64.into_val(&env))
-    );
+    assert_eq!(map.get(sym_package_id(&env)), Some(42u64.into_val(&env)));
     assert_eq!(
         map.get(symbol_short!("recipient")),
         Some(recipient.into_val(&env))
@@ -160,10 +154,7 @@ fn test_package_claimed_emits_event() {
         symbol_short!("package_claimed").into_val(&env),
     );
     let map = Map::<Symbol, Val>::try_from_val(&env, &data).unwrap();
-    assert_eq!(
-        map.get(sym_package_id(&env)),
-        Some(0u64.into_val(&env))
-    );
+    assert_eq!(map.get(sym_package_id(&env)), Some(0u64.into_val(&env)));
     assert_eq!(
         map.get(symbol_short!("recipient")),
         Some(recipient.into_val(&env))
@@ -213,10 +204,7 @@ fn test_package_disbursed_emits_event() {
         symbol_short!("package_disbursed").into_val(&env),
     );
     let map = Map::<Symbol, Val>::try_from_val(&env, &data).unwrap();
-    assert_eq!(
-        map.get(sym_package_id(&env)),
-        Some(0u64.into_val(&env))
-    );
+    assert_eq!(map.get(sym_package_id(&env)), Some(0u64.into_val(&env)));
     assert_eq!(
         map.get(symbol_short!("recipient")),
         Some(recipient.into_val(&env))
@@ -263,10 +251,7 @@ fn test_package_revoked_emits_event() {
         symbol_short!("package_revoked").into_val(&env),
     );
     let map = Map::<Symbol, Val>::try_from_val(&env, &data).unwrap();
-    assert_eq!(
-        map.get(sym_package_id(&env)),
-        Some(0u64.into_val(&env))
-    );
+    assert_eq!(map.get(sym_package_id(&env)), Some(0u64.into_val(&env)));
     assert_eq!(
         map.get(symbol_short!("recipient")),
         Some(recipient.into_val(&env))
@@ -314,10 +299,7 @@ fn test_package_refunded_emits_event() {
         symbol_short!("package_refunded").into_val(&env),
     );
     let map = Map::<Symbol, Val>::try_from_val(&env, &data).unwrap();
-    assert_eq!(
-        map.get(sym_package_id(&env)),
-        Some(0u64.into_val(&env))
-    );
+    assert_eq!(map.get(sym_package_id(&env)), Some(0u64.into_val(&env)));
     assert_eq!(
         map.get(symbol_short!("recipient")),
         Some(recipient.into_val(&env))
