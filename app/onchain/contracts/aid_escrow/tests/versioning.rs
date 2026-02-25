@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use aid_escrow::{AidEscrow, AidEscrowClient, Error};
+use aid_escrow::{AidEscrow, AidEscrowClient};
 use soroban_sdk::{Address, Env, testutils::Address as _};
 
 #[test]
