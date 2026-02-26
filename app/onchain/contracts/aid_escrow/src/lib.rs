@@ -70,8 +70,10 @@ pub enum Error {
     InsufficientFunds = 9,
     PackageIdExists = 10,
     InvalidState = 11,
-// recipients and amounts have different lengths
-    ContractPaused = 13,
+    // recipients and amounts have different lengths
+    MismatchedArrays = 12,
+    InsufficientSurplus = 13,
+    ContractPaused = 14,
 }
 
 // --- Contract Events ---
@@ -139,7 +141,15 @@ pub struct SurplusWithdrawnEvent {
     pub to: Address,
     pub token: Address,
     pub amount: i128,
+}
+
+#[contractevent]
 pub struct ContractPausedEvent {
+    pub admin: Address,
+}
+
+#[contractevent]
+pub struct ContractUnpausedEvent {
     pub admin: Address,
 }
 
