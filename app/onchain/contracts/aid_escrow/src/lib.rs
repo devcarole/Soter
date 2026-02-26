@@ -902,20 +902,20 @@ impl AidEscrow {
             let idx_key = (symbol_short!("pidx"), i);
             if let Some(pkg_id) = env.storage().persistent().get::<_, u64>(&idx_key) {
                 let pkg_key = (symbol_short!("pkg"), pkg_id);
-                if let Some(package) = env.storage().persistent().get::<_, Package>(&pkg_key) {
-                    if package.token == token {
-                        match package.status {
-                            PackageStatus::Created => {
-                                total_committed += package.amount;
-                            }
-                            PackageStatus::Claimed => {
-                                total_claimed += package.amount;
-                            }
-                            PackageStatus::Expired
-                            | PackageStatus::Cancelled
-                            | PackageStatus::Refunded => {
-                                total_expired_cancelled += package.amount;
-                            }
+                if let Some(package) = env.storage().persistent().get::<_, Package>(&pkg_key)
+                    && package.token == token
+                {
+                    match package.status {
+                        PackageStatus::Created => {
+                            total_committed += package.amount;
+                        }
+                        PackageStatus::Claimed => {
+                            total_claimed += package.amount;
+                        }
+                        PackageStatus::Expired
+                        | PackageStatus::Cancelled
+                        | PackageStatus::Refunded => {
+                            total_expired_cancelled += package.amount;
                         }
                     }
                 }
