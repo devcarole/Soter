@@ -1,10 +1,10 @@
 import { Controller, Get, Version } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { API_VERSIONS } from './common/constants/api-version.constants';
 import { Public } from './common/decorators/public.decorator';
 
-@ApiTags('app')
+@ApiTags('App')
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
@@ -13,11 +13,11 @@ export class AppController {
   @Version(API_VERSIONS.V1)
   @ApiOperation({
     summary: 'Root endpoint (v1)',
-    description: 'Returns a welcome message and API information. Part of v1 API.',
+    description:
+      'Returns a welcome message and API information. Part of v1 API.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Welcome message returned successfully',
+  @ApiOkResponse({
+    description: 'Welcome message returned successfully.',
     schema: {
       example: {
         message: 'Welcome to Pulsefy/Soter API',
@@ -32,6 +32,11 @@ export class AppController {
 
   @Public()
   @Get('health')
+  @ApiOperation({
+    summary: 'Simple health check',
+    description: 'Basic endpoint to verify the service is running and reach the backend.',
+  })
+  @ApiOkResponse({ description: 'Service is available.' })
   health() {
     return { status: 'ok', service: 'backend' };
   }

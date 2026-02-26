@@ -6,7 +6,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateClaimDto {
   @ApiProperty({
@@ -35,10 +35,9 @@ export class CreateClaimDto {
   @IsString()
   recipientRef: string;
 
-  @ApiProperty({
-    description: 'Reference to evidence supporting the claim',
+  @ApiPropertyOptional({
+    description: 'Reference or link to evidence supporting the claim (e.g., photo, document hash).',
     example: 'evidence-456',
-    required: false,
   })
   @IsOptional()
   @IsString()

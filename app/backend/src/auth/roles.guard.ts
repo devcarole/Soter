@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 import { ROLES_KEY } from './roles.decorator';
 
 @Injectable()
@@ -16,22 +17,14 @@ export class RolesGuard implements CanActivate {
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
+
     if (!requiredRoles) {
-      return true; // No role required
+      return true; // No role required — open to any authenticated caller
     }
 
-    const request = context.switchToHttp().getRequest<{
-      headers: Record<string, string | string[] | undefined>;
-    }>();
+    const request = context.switchToHttp().getRequest<Request>();
+    const role = request.user?.role;
 
-    // Simple header/api-key stub for demo purposes
-    const userRole = request.headers['x-role'];
-    const role =
-      typeof userRole === 'string'
-        ? userRole
-        : Array.isArray(userRole)
-          ? userRole[0]
-          : undefined;
     if (!role || !requiredRoles.includes(role)) {
       throw new ForbiddenException('Access denied: insufficient role');
     }

@@ -90,7 +90,9 @@ export function isVersionDeprecated(version: string): boolean {
 /**
  * Get version metadata
  */
-export function getVersionMetadata(version: string): VersionMetadata | undefined {
+export function getVersionMetadata(
+  version: string,
+): VersionMetadata | undefined {
   return VERSION_METADATA[version];
 }
 

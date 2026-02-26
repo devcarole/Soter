@@ -121,3 +121,19 @@ model Role {
   id   Int    @id @default(autoincrement())
   name String @unique
 }
+
+enum AppRole {
+  admin
+  operator
+  client
+  ngo
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  role        AppRole
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

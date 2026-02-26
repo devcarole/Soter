@@ -1,45 +1,113 @@
-import { Controller, Get, Req, Version } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Req, Res, Version, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiServiceUnavailableResponse, ApiInternalServerErrorResponse } from '@nestjs/swagger';
+import { Response } from 'express';
 import { RequestWithRequestId } from '../middleware/request-correlation.middleware';
 import { HealthService } from './health.service';
+import { LivenessResponse, ReadinessResponse } from './health.service';
 import { API_VERSIONS } from '../common/constants/api-version.constants';
+import { Public } from '../common/decorators/public.decorator';
 
-@ApiTags('health')
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
+  @Public()
   @Get()
   @Version(API_VERSIONS.V1)
   @ApiOperation({
-    summary: 'Check system health',
-    description: 'Returns the current health status of the API. Part of v1 API.',
+    summary: 'Check system liveness and basic service metadata',
+    description:
+      'Returns process liveness details and service metadata. Part of v1 API.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'System is healthy',
+  @ApiOkResponse({
+    description: 'Service is alive and basic metadata retrieved.',
     schema: {
       example: {
-        status: 'healthy',
-        version: 'v1',
-        timestamp: '2025-01-23T10:00:00.000Z',
+        status: 'ok',
+        version: '1.0.0',
+        timestamp: '2025-02-23T12:00:00.000Z',
       },
     },
   })
-  check(@Req() req: RequestWithRequestId) {
-    // Access the request ID from the request object
+  check(@Req() req: RequestWithRequestId): LivenessResponse {
     const requestId = req.requestId;
-
-    // Log with request correlation
     this.healthService.logHealthCheck(requestId);
 
-    return this.healthService.check();
+    return this.healthService.getLiveness();
+  }
+
+  @Public()
+  @Get('live')
+  @Version(API_VERSIONS.V1)
+  @ApiOperation({
+    summary: 'Liveness probe',
+    description:
+      'Returns process-level liveness information. Intended for orchestration liveness checks.',
+  })
+  @ApiOkResponse({
+    description: 'Process is alive.',
+    schema: {
+      example: {
+        status: 'ok',
+        uptime: '2d 5h 12m 30s',
+      },
+    },
+  })
+  liveness(): LivenessResponse {
+    return this.healthService.getLiveness();
+  }
+
+  @Public()
+  @Get('ready')
+  @Version(API_VERSIONS.V1)
+  @ApiOperation({
+    summary: 'Readiness probe',
+    description:
+      'Returns dependency readiness (database and optional Stellar RPC). Responds 503 when not ready.',
+  })
+  @ApiOkResponse({
+    description: 'Service is ready to serve traffic.',
+    schema: {
+      example: {
+        ready: true,
+        dependencies: {
+          database: 'up',
+          stellar: 'up',
+        },
+      },
+    },
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'Service is not ready (one or more dependencies are down).',
+    schema: {
+      example: {
+        ready: false,
+        dependencies: {
+          database: 'down',
+          stellar: 'up',
+        },
+      },
+    },
+  })
+  async readiness(
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ReadinessResponse> {
+    const readiness = await this.healthService.getReadiness();
+
+    if (!readiness.ready) {
+      res.status(HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    return readiness;
   }
 
   @Get('error')
   @Version(API_VERSIONS.V1)
   @ApiOperation({ summary: 'Trigger an error for testing' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiInternalServerErrorResponse({
+    description: 'Test error triggered successfully.',
+  })
   triggerError(@Req() req: RequestWithRequestId) {
     const requestId = req.requestId;
 
