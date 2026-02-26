@@ -7,8 +7,8 @@ use soroban_sdk::{
 
 // --- Storage Keys ---
 const KEY_ADMIN: Symbol = symbol_short!("admin");
-const KEY_TOTAL_LOCKED: Symbol = symbol_short!("locked"); // Map<Address, i128>
-const KEY_PKG_COUNTER: Symbol = symbol_short!("pkg_cnt"); // Auto-incrementing package counter
+const KEY_TOTAL_LOCKED: Symbol = symbol_short!("locked");
+const KEY_PKG_COUNTER: Symbol = symbol_short!("pkg_cnt");
 const KEY_CONFIG: Symbol = symbol_short!("config");
 const KEY_PKG_IDX: Symbol = symbol_short!("pkg_idx"); // Aggregation index counter
 const KEY_DISTRIBUTORS: Symbol = symbol_short!("dstrbtrs"); // Map<Address, bool>
@@ -64,14 +64,16 @@ pub enum Error {
     NotAuthorized = 3,
     InvalidAmount = 4,
     PackageNotFound = 5,
-    PackageNotActive = 6, // Already claimed, expired, or cancelled
+    PackageNotActive = 6,
     PackageExpired = 7,
     PackageNotExpired = 8,
-    InsufficientFunds = 9, // Contract balance < Total Locked + New Amount
+    InsufficientFunds = 9,
     PackageIdExists = 10,
-    InvalidState = 11,     // Transition not allowed
-    MismatchedArrays = 12, // recipients and amounts have different lengths
-    ContractPaused = 13,
+    InvalidState = 11,
+    // recipients and amounts have different lengths
+    MismatchedArrays = 12,
+    InsufficientSurplus = 13,
+    ContractPaused = 14,
 }
 
 // --- Contract Events ---
@@ -132,6 +134,13 @@ pub struct ExtendedEvent {
     pub admin: Address,
     pub old_expires_at: u64,
     pub new_expires_at: u64,
+}
+
+#[contractevent]
+pub struct SurplusWithdrawnEvent {
+    pub to: Address,
+    pub token: Address,
+    pub amount: i128,
 }
 
 #[contractevent]
@@ -547,7 +556,7 @@ impl AidEscrow {
         }
 
         // State Transition
-        package.status = PackageStatus::Claimed; // Mark as claimed (or Disbursed if we had that enum)
+        package.status = PackageStatus::Claimed;
         env.storage().persistent().set(&key, &package);
 
         // Update Locked
@@ -625,7 +634,7 @@ impl AidEscrow {
                 // If we just expired it, we need to unlock the funds first
                 Self::decrement_locked(&env, &package.token, package.amount);
             } else {
-                return Err(Error::InvalidState); // Must revoke first
+                return Err(Error::InvalidState);
             }
         } else if package.status == PackageStatus::Claimed
             || package.status == PackageStatus::Refunded
@@ -727,7 +736,7 @@ impl AidEscrow {
 
         // 5. Package must not be unbounded (expires_at must be > 0)
         if package.expires_at == 0 {
-            return Err(Error::InvalidState); // Cannot extend unbounded packages
+            return Err(Error::InvalidState);
         }
 
         // 6. Package must not already be expired
@@ -753,6 +762,56 @@ impl AidEscrow {
             admin: admin.clone(),
             old_expires_at,
             new_expires_at,
+        }
+        .publish(&env);
+
+        Ok(())
+    }
+
+    /// Admin-only function to withdraw surplus (unallocated) funds from the contract.
+    /// Requirements: Admin auth, valid amount, sufficient surplus available.
+    /// Behavior: Transfers amount of token from contract to the specified address.
+    pub fn withdraw_surplus(
+        env: Env,
+        to: Address,
+        amount: i128,
+        token: Address,
+    ) -> Result<(), Error> {
+        // 1. Only the admin can withdraw surplus
+        let admin = Self::get_admin(env.clone())?;
+        admin.require_auth();
+
+        // 2. Validate amount
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+
+        // 3. Get contract's current balance for the token
+        let token_client = token::Client::new(&env, &token);
+        let contract_balance = token_client.balance(&env.current_contract_address());
+
+        // 4. Get total locked amount for the token
+        let locked_map: Map<Address, i128> = env
+            .storage()
+            .instance()
+            .get(&KEY_TOTAL_LOCKED)
+            .unwrap_or(Map::new(&env));
+        let total_locked = locked_map.get(token.clone()).unwrap_or(0);
+
+        // 5. Calculate available surplus and validate
+        let available_surplus = contract_balance - total_locked;
+        if amount > available_surplus {
+            return Err(Error::InsufficientSurplus);
+        }
+
+        // 6. Transfer funds from contract to recipient
+        token_client.transfer(&env.current_contract_address(), &to, &amount);
+
+        // 7. Emit event
+        SurplusWithdrawnEvent {
+            to: to.clone(),
+            token: token.clone(),
+            amount,
         }
         .publish(&env);
 
