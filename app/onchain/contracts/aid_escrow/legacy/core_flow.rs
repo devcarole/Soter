@@ -244,9 +244,9 @@ fn test_cancel_package_comprehensive() {
     assert_eq!(res_claim, Err(Ok(Error::PackageNotActive)));
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+
 // Expiration × Claiming interaction tests
-// ──────────────────────────────────────────────────────────────────────────────
+
 
 /// A package created with a short `expires_in` window cannot be claimed once the
 /// ledger timestamp advances past `expires_at`.  The contract must return
@@ -256,7 +256,7 @@ fn test_claim_after_expiry_fails() {
     let env = Env::default();
     env.mock_all_auths();
 
-    // ── actors ──────────────────────────────────────────────────────────────
+    // actors 
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
@@ -266,11 +266,11 @@ fn test_claim_after_expiry_fails() {
     let client = AidEscrowClient::new(&env, &contract_id);
     client.init(&admin);
 
-    // ── fund the pool ────────────────────────────────────────────────────────
+    // fund the pool 
     token_admin_client.mint(&admin, &2_000);
     client.fund(&token_client.address, &admin, &2_000);
 
-    // ── create a package that expires in 60 seconds ──────────────────────────
+    // create a package that expires in 60 seconds
     let start_time: u64 = 1_000;
     env.ledger().set_timestamp(start_time);
 
@@ -285,18 +285,18 @@ fn test_claim_after_expiry_fails() {
     assert_eq!(pkg.status, PackageStatus::Created);
     assert_eq!(pkg.expires_at, expires_at);
 
-    // ── advance ledger PAST the expiry ───────────────────────────────────────
+    // advance ledger PAST the expiry
     env.ledger().set_timestamp(expires_at + 1);
 
-    // ── claim must fail with PackageExpired ──────────────────────────────────
+    // claim must fail with PackageExpired
     let result = client.try_claim(&pkg_id);
     assert_eq!(result, Err(Ok(Error::PackageExpired)));
 
-    // ── package status should have been auto-updated to Expired ──────────────
+    // package status should have been auto-updated to Expired
     let pkg_after = client.get_package(&pkg_id);
     assert_eq!(pkg_after.status, PackageStatus::Expired);
 
-    // ── recipient received nothing ───────────────────────────────────────────
+    //  recipient received nothing 
     assert_eq!(token_client.balance(&recipient), 0);
 }
 
@@ -308,7 +308,7 @@ fn test_claim_just_before_expiry_succeeds() {
     let env = Env::default();
     env.mock_all_auths();
 
-    // ── actors ──────────────────────────────────────────────────────────────
+    // actors
     let admin = Address::generate(&env);
     let recipient = Address::generate(&env);
     let token_admin = Address::generate(&env);
@@ -318,11 +318,11 @@ fn test_claim_just_before_expiry_succeeds() {
     let client = AidEscrowClient::new(&env, &contract_id);
     client.init(&admin);
 
-    // ── fund the pool ────────────────────────────────────────────────────────
+    // fund the pool
     token_admin_client.mint(&admin, &2_000);
     client.fund(&token_client.address, &admin, &2_000);
 
-    // ── create a package that expires in 120 seconds ─────────────────────────
+    // create a package that expires in 120 seconds
     let start_time: u64 = 5_000;
     env.ledger().set_timestamp(start_time);
 
@@ -333,13 +333,13 @@ fn test_claim_just_before_expiry_succeeds() {
     let amount: i128 = 750;
     client.create_package(&pkg_id, &recipient, &amount, &token_client.address, &expires_at);
 
-    // ── set ledger to one second BEFORE the boundary ─────────────────────────
+    // set ledger to one second BEFORE the boundary 
     env.ledger().set_timestamp(expires_at - 1);
 
-    // ── claim must succeed ───────────────────────────────────────────────────
+    // claim must succeed 
     client.claim(&pkg_id);
 
-    // ── verify final state ───────────────────────────────────────────────────
+    // verify final state
     let pkg = client.get_package(&pkg_id);
     assert_eq!(pkg.status, PackageStatus::Claimed);
     assert_eq!(token_client.balance(&recipient), amount);
