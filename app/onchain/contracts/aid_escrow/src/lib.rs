@@ -77,49 +77,66 @@ pub enum Error {
     ContractPaused = 14,
 }
 
-// --- Contract Events ---
-// Changed from #[contracttype] to #[contractevent]
+// --- Contract Events (indexer-friendly; stable topics & payloads) ---
+// Topic = struct name in snake_case (e.g. package_created). Do not rename without versioning.
 
+/// Emitted when the escrow pool is funded. Actor = funder.
 #[contractevent]
-pub struct FundEvent {
+pub struct EscrowFunded {
     pub from: Address,
     pub token: Address,
     pub amount: i128,
+    pub timestamp: u64,
 }
 
+/// Emitted when a package is created. Actor = operator (admin or distributor).
 #[contractevent]
-pub struct PackageCreatedEvent {
-    pub id: u64,
+pub struct PackageCreated {
+    pub package_id: u64,
     pub recipient: Address,
     pub amount: i128,
+    pub actor: Address,
+    pub timestamp: u64,
 }
 
+/// Emitted when a recipient claims a package. Actor = recipient.
 #[contractevent]
-pub struct ClaimedEvent {
-    pub id: u64,
+pub struct PackageClaimed {
+    pub package_id: u64,
     pub recipient: Address,
     pub amount: i128,
+    pub actor: Address,
+    pub timestamp: u64,
 }
 
+/// Emitted when admin disburses a package. Actor = admin.
 #[contractevent]
-pub struct DisbursedEvent {
-    pub id: u64,
-    pub admin: Address,
+pub struct PackageDisbursed {
+    pub package_id: u64,
+    pub recipient: Address,
     pub amount: i128,
+    pub actor: Address,
+    pub timestamp: u64,
 }
 
+/// Emitted when a package is revoked/cancelled. Actor = admin.
 #[contractevent]
-pub struct RevokedEvent {
-    pub id: u64,
-    pub admin: Address,
+pub struct PackageRevoked {
+    pub package_id: u64,
+    pub recipient: Address,
     pub amount: i128,
+    pub actor: Address,
+    pub timestamp: u64,
 }
 
+/// Emitted when funds are refunded to admin after expire/cancel. Actor = admin.
 #[contractevent]
-pub struct RefundedEvent {
-    pub id: u64,
-    pub admin: Address,
+pub struct PackageRefunded {
+    pub package_id: u64,
+    pub recipient: Address,
     pub amount: i128,
+    pub actor: Address,
+    pub timestamp: u64,
 }
 
 #[contractevent]
@@ -296,11 +313,12 @@ impl AidEscrow {
         let token_client = token::Client::new(&env, &token);
         token_client.transfer(&from, env.current_contract_address(), &amount);
 
-        // Emit event
-        FundEvent {
+        let timestamp = env.ledger().timestamp();
+        EscrowFunded {
             from,
             token,
             amount,
+            timestamp,
         }
         .publish(&env);
 
@@ -388,11 +406,12 @@ impl AidEscrow {
         env.storage().persistent().set(&idx_key, &id);
         env.storage().instance().set(&KEY_PKG_IDX, &(idx + 1));
 
-        // Emit Event
-        PackageCreatedEvent {
-            id,
-            recipient,
+        PackageCreated {
+            package_id: id,
+            recipient: recipient.clone(),
             amount,
+            actor: operator,
+            timestamp: created_at,
         }
         .publish(&env);
 
@@ -481,11 +500,12 @@ impl AidEscrow {
             current_locked += amount;
             total_amount += amount;
 
-            // Emit per-package event
-            PackageCreatedEvent {
-                id,
-                recipient,
+            PackageCreated {
+                package_id: id,
+                recipient: recipient.clone(),
                 amount,
+                actor: operator.clone(),
+                timestamp: created_at,
             }
             .publish(&env);
 
@@ -552,11 +572,13 @@ impl AidEscrow {
             &package.amount,
         );
 
-        // Emit Event
-        ClaimedEvent {
-            id,
+        let timestamp = env.ledger().timestamp();
+        PackageClaimed {
+            package_id: id,
             recipient: package.recipient.clone(),
             amount: package.amount,
+            actor: package.recipient.clone(),
+            timestamp,
         }
         .publish(&env);
 
@@ -596,10 +618,13 @@ impl AidEscrow {
             &package.amount,
         );
 
-        DisbursedEvent {
-            id,
-            admin: admin.clone(),
+        let timestamp = env.ledger().timestamp();
+        PackageDisbursed {
+            package_id: id,
+            recipient: package.recipient.clone(),
             amount: package.amount,
+            actor: admin.clone(),
+            timestamp,
         }
         .publish(&env);
 
@@ -629,10 +654,13 @@ impl AidEscrow {
         // Unlock funds (return to pool)
         Self::decrement_locked(&env, &package.token, package.amount);
 
-        RevokedEvent {
-            id,
-            admin: admin.clone(),
+        let timestamp = env.ledger().timestamp();
+        PackageRevoked {
+            package_id: id,
+            recipient: package.recipient.clone(),
             amount: package.amount,
+            actor: admin.clone(),
+            timestamp,
         }
         .publish(&env);
 
@@ -679,10 +707,13 @@ impl AidEscrow {
         let token_client = token::Client::new(&env, &package.token);
         token_client.transfer(&env.current_contract_address(), &admin, &package.amount);
 
-        RefundedEvent {
-            id,
-            admin: admin.clone(),
+        let timestamp = env.ledger().timestamp();
+        PackageRefunded {
+            package_id: id,
+            recipient: package.recipient.clone(),
             amount: package.amount,
+            actor: admin.clone(),
+            timestamp,
         }
         .publish(&env);
 
@@ -721,11 +752,13 @@ impl AidEscrow {
         // 5. Unlock funds (Decrement the global locked amount so funds return to the pool)
         Self::decrement_locked(&env, &package.token, package.amount);
 
-        // Reuse RevokedEvent or create a new CancelledEvent if preferred
-        RevokedEvent {
-            id: package_id,
-            admin,
+        let timestamp = env.ledger().timestamp();
+        PackageRevoked {
+            package_id,
+            recipient: package.recipient.clone(),
             amount: package.amount,
+            actor: admin.clone(),
+            timestamp,
         }
         .publish(&env);
 
