@@ -899,6 +899,13 @@ impl AidEscrow {
             .ok_or(Error::PackageNotFound)
     }
 
+    /// Returns only the status of a package.
+    /// Cheaper alternative to get_package for polling frontends.
+    pub fn view_package_status(env: Env, id: u64) -> Result<PackageStatus, Error> {
+        let pkg = Self::get_package(env, id)?;
+        Ok(pkg.status)
+    }
+
     // --- Analytics ---
 
     /// Returns aggregate statistics for a given token.
